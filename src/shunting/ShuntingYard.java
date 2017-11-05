@@ -5,6 +5,7 @@
  */
 package shunting;
 
+import java.util.EmptyStackException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
@@ -20,6 +21,7 @@ public class ShuntingYard {
     private HashMap<String,Integer> operators;
     private LinkedList<String> output;
     private Stack<String> operatorStack;
+    private LinkedList<Stack> stacks;
     
     public ShuntingYard(){
         operators = new HashMap<String,Integer>(){{
@@ -33,12 +35,16 @@ public class ShuntingYard {
         }};
         output = new LinkedList<String>();
         operatorStack = new Stack<String>();
+        stacks = new LinkedList<Stack>();
     }
     
     public String convert(String input){
-        //consider constraints! empty, null, no letters, no funny symbols
-        
+        //constraints
+        if(input.isEmpty()){ //input.matches("^[\\d| -| +| *| /| ^]" 
+            return "Please, enter a valid input.";
+        }
         String[] tokens = input.split("\\s");
+        //int n = steps == 0? tokens.length : steps;
         
         for(int i=0; i<tokens.length; i++){
             
@@ -55,22 +61,59 @@ public class ShuntingYard {
                 operatorStack.push(tokens[i]);
             }
             else if(tokens[i].compareTo(")") == 0){
-                while(operatorStack.peek().compareTo("(") != 0){ 
-                   output.add(operatorStack.pop());
-                } /* if the stack runs out without finding a left bracket, then there are
-		mismatched parentheses. */
-                operatorStack.pop();
+                try{
+                    while(operatorStack.peek().compareTo("(") != 0)
+                       output.add(operatorStack.pop());
+                    operatorStack.pop();
+                } catch (EmptyStackException e){
+                    String error = "Mismatched parentheses!";
+                    System.err.println(error);
+                    return error;
+                }
+            }
+            stacks.add(operatorStack);
+        }
+        while(!operatorStack.isEmpty()){
+            try{
+                if(operatorStack.peek().compareTo("(") != 0)
+                    output.add(operatorStack.pop());
+                else
+                    throw new Exception();
+            }
+            catch(Exception e){
+                String error = "Mismatched parentheses!";
+                System.err.println(error);
+                return error;
             }
         }
-        
-        while(!operatorStack.isEmpty())
-            output.add(operatorStack.pop());
         
         StringBuilder result = new StringBuilder();
         
         while(!output.isEmpty())
             result.append(output.pop()).append(' ');
         
+        return result.toString();
+    }
+    
+    public String convertBySteps(String input, int n){
+        String[] result = convert(input).split("\\s");
+        try{
+            return result[n];
+        }
+        catch(IndexOutOfBoundsException ioobe){
+            return " final expression";
+        }
+    }
+    
+    public String showStack(int n){ //constraints!!
+        Stack s = stacks.get(n);
+        StringBuilder result = new StringBuilder();
+        try{
+            result.append(s.pop()).append("\\n");
+        }
+        catch (EmptyStackException e){
+            return "Empty";
+        }
         return result.toString();
     }
     
