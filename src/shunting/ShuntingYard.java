@@ -17,12 +17,10 @@ import java.util.Stack;
 
 public class ShuntingYard {
     
-    //private final String operators = "-+/*^";
     private HashMap<String,Integer> operators;
     private LinkedList<String> output;
     private Stack<String> operatorStack;
-    private LinkedList<Stack> stacks;
-    
+
     public ShuntingYard(){
         operators = new HashMap<String,Integer>(){{
             put("-",new Integer(0));
@@ -35,48 +33,73 @@ public class ShuntingYard {
         }};
         output = new LinkedList<String>();
         operatorStack = new Stack<String>();
-        stacks = new LinkedList<Stack>();
     }
     
-    public String convert(String input){
-        //constraints
-        if(input.isEmpty()){ //input.matches("^[\\d| -| +| *| /| ^]" 
-            return "Please, enter a valid input.";
-        }
+    private void convert(String input){
         String[] tokens = input.split("\\s");
-        //int n = steps == 0? tokens.length : steps;
         
-        for(int i=0; i<tokens.length; i++){
-            
-            if(tokens[i].matches("\\d+")){
-                output.add(tokens[i]);
-            }
-           else if(tokens[i].matches("[-,+,/,*,^]")){
-                while(!operatorStack.isEmpty() && isGreater(operatorStack.peek(), tokens[i])){
+        for (String token : tokens) {
+            if (token.matches("\\d+")) {
+                output.add(token);
+            } else if (token.matches("[-,+,/,*,^]")) {
+                while (!operatorStack.isEmpty() && isGreater(operatorStack.peek(), token)) {
                     output.add(operatorStack.pop());
                 }
-                operatorStack.push(tokens[i]);
-            }
-            else if(tokens[i].compareTo("(") == 0){
-                operatorStack.push(tokens[i]);
-            }
-            else if(tokens[i].compareTo(")") == 0){
+                operatorStack.push(token);
+            } else if (token.compareTo("(") == 0) {
+                operatorStack.push(token);
+            } else if (token.compareTo(")") == 0) {
                 try{
                     while(operatorStack.peek().compareTo("(") != 0)
-                       output.add(operatorStack.pop());
+                        output.add(operatorStack.pop());
                     operatorStack.pop();
                 } catch (EmptyStackException e){
-                    String error = "Mismatched parentheses!";
-                    System.err.println(error);
-                    return error;
+                    System.err.println("Mismatched parentheses!");
                 }
             }
-            stacks.add(operatorStack);
+            String temp = "";
+            for(int h=0; h<operatorStack.size();h++){
+                temp = temp + operatorStack.get(h) + " ";
+            }
         }
+    }
+    
+    public String convertFull(String input){
+        if(input.isEmpty()){
+            return "Please, enter a valid input.";
+        }
+        convert(input);
+        return showFullResult();
+    }
+    
+    //returns [0]: output, [1]: operator stack
+    public String[] convertBySteps(String input, int n){
+        if(input.isEmpty())
+            return new String[]{"Please, enter a valid input.", ""};
+        
+        output = new LinkedList<String>();
+        operatorStack = new Stack<String>();
+        String[] tokens = input.split("\\s");
+        
+        if(n < tokens.length){
+            StringBuilder token = new StringBuilder();
+            for(int i=0; i<=n;i++)
+                token.append(tokens[i]).append(" ");
+            convert(token.toString());
+            return showPartialResult();
+        }
+        else{
+            convert(input);
+            return new String[] {showFullResult(), ""};
+        }
+    }
+    
+    private String showFullResult(){
         while(!operatorStack.isEmpty()){
             try{
-                if(operatorStack.peek().compareTo("(") != 0)
+                if(operatorStack.peek().compareTo("(") != 0){
                     output.add(operatorStack.pop());
+                }
                 else
                     throw new Exception();
             }
@@ -86,7 +109,6 @@ public class ShuntingYard {
                 return error;
             }
         }
-        
         StringBuilder result = new StringBuilder();
         
         while(!output.isEmpty())
@@ -95,26 +117,18 @@ public class ShuntingYard {
         return result.toString();
     }
     
-    public String convertBySteps(String input, int n){
-        String[] result = convert(input).split("\\s");
-        try{
-            return result[n];
+    private String[] showPartialResult(){
+        StringBuilder[] r = new StringBuilder[2];
+        r[0] = new StringBuilder("");
+        r[1] = new StringBuilder("");
+        
+        for(int i=0; i<output.size(); i++){
+            r[0].append(output.get(i)).append(" ");
         }
-        catch(IndexOutOfBoundsException ioobe){
-            return " final expression";
+        for(int i=0; i<operatorStack.size(); i++){
+            r[1].insert(0, " ").insert(0,operatorStack.get(i));
         }
-    }
-    
-    public String showStack(int n){ //constraints!!
-        Stack s = stacks.get(n);
-        StringBuilder result = new StringBuilder();
-        try{
-            result.append(s.pop()).append("\\n");
-        }
-        catch (EmptyStackException e){
-            return "Empty";
-        }
-        return result.toString();
+        return new String[] {r[0].toString(), r[1].toString()};
     }
     
     private boolean isGreater(String top, String token){
